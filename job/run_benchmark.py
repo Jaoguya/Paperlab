@@ -1,7 +1,7 @@
 """Sample benchmark job.
 
 Milestone 1: runs a small CPU benchmark and writes result.json.
-Milestone 4: upload result.json to MinIO before exiting (see TODO below).
+Milestone 4: write result.json to a persistent volume (see TODO below).
 """
 
 import json
@@ -34,9 +34,9 @@ def main() -> None:
         json.dump(result, f, indent=2)
     print(json.dumps(result))
 
-    # TODO (milestone 4): upload result.json to the MinIO bucket named in
-    # the RESULTS_BUCKET env var, then verify the object exists.
-    # If the upload fails, exit non-zero so Kubernetes marks the Job failed.
+    # TODO (milestone 4): write result.json into the RESULTS_DIR env var folder
+    # (a mounted persistent volume), not the container's own disk.
+    # If the write fails, exit non-zero so Kubernetes marks the Job failed.
 
 
 if __name__ == "__main__":

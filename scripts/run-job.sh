@@ -11,4 +11,4 @@ kubectl apply -f k8s/benchmark-job.yaml
 kubectl wait --for=condition=complete job/benchmark --timeout=300s
 kubectl logs job/benchmark
 
-# TODO (milestone 4): check result.json exists in the MinIO bucket.
+# TODO (milestone 4): check result.json exists on the persistent volume.

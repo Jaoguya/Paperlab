@@ -24,8 +24,7 @@ spec:
               value: "manual"
             - name: BENCH_SIZE
               value: "5000000"
-            # TODO (milestone 4): RESULTS_BUCKET and MinIO endpoint/credentials
-            # from a Secret, not hard-coded here.
+            # TODO (milestone 4): RESULTS_DIR pointing at a mounted persistent volume.
           resources:
             # TODO: set requests/limits and explain what happens if you exceed them.
             requests:
