@@ -1,6 +1,6 @@
 # PaperLab
 
-A small platform that runs benchmark experiments on Kubernetes so results are never lost, stuck jobs are noticed, and nothing sits idle unseen.
+A small platform that runs research benchmarks on Kubernetes so results are kept, failed jobs are noticed, and every change is tested automatically.
 
 ## The problem
 
@@ -8,62 +8,65 @@ During my research projects I ran long benchmarks by hand on cloud servers. Thre
 
 - A `git reset` on a server **overwrote finished experiment results**.
 - A watchdog bug **left a server running overnight**, wasting money.
-- I **could not tell whether a long run was stuck** without logging in to each machine.
+- I **could not tell whether a long run had failed** without logging in to each machine.
 
-PaperLab is the setup I wish I had: experiments run as Kubernetes Jobs, every job saves its results to object storage before it exits, and Prometheus alerts when a job hangs or a node sits idle. Everything runs locally on a kind cluster — no cloud account needed.
+PaperLab is the setup I wish I had: experiments run as Kubernetes Jobs on a local kind cluster, each job saves its result to a persistent volume, Prometheus and Grafana show what is running, and an alert fires when a job fails. No cloud account needed.
 
 ## Architecture
 
 ```
- git push ──► GitHub Actions ──► build job image ──► push to GHCR
-                    │
-                    └──► spin up kind in CI ──► run sample Job ──► check result in MinIO
+ git push ──► GitHub Actions ──► build job image ──► kind cluster in CI ──► run test Job
 
- Local kind cluster
- ┌──────────────────────────────────────────────────────────┐
- │  Job: benchmark ──► writes result.json ──► MinIO bucket   │
- │        │                                                  │
- │        └── metrics ──► Prometheus ──► Grafana dashboard   │
- │                              └──► alerts: stuck / idle    │
- └──────────────────────────────────────────────────────────┘
- Terraform creates the cluster and installs MinIO + monitoring.
+ Local kind cluster (1 control plane + 2 workers)
+ ┌─────────────────────────────────────────────────────────────┐
+ │  Job: benchmark ──► writes result.json ──► persistent volume │
+ │        │                                                     │
+ │        └── job status ──► Prometheus ──► Grafana dashboard   │
+ │                                 └──► alert: job failed       │
+ └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Milestones
 
-Work top to bottom. Tick each box only when you can explain it without notes.
+Tick each box only when you can explain it without notes.
 
-- [ ] **1. Container** — `job/run_benchmark.py` runs locally; `job/Dockerfile` builds and runs it.
+- [ ] **1. Container** — `job/run_benchmark.py` runs locally; `job/Dockerfile` builds it and runs it as a non-root user.
 - [ ] **2. Cluster** — `scripts/up.sh` creates a kind cluster from `cluster/kind-config.yaml`.
 - [ ] **3. Job** — `k8s/benchmark-job.yaml` runs the image as a Kubernetes Job.
-- [ ] **4. Safe results** — the job uploads `result.json` to MinIO *before* it exits; a failed upload fails the job.
-- [ ] **5. Monitoring** — kube-prometheus-stack installed; a Grafana dashboard shows running, succeeded and failed jobs.
-- [ ] **6. Alerts** — `monitoring/alerts.yaml` fires on a stuck job and on an idle node.
-- [ ] **7. CI/CD** — `.github/workflows/ci.yml` builds the image, runs a sample job in kind, and checks the result exists.
-- [ ] **8. Infrastructure as code** — `terraform/` creates the cluster and installs MinIO and monitoring; `scripts/up.sh` just calls Terraform.
-- [ ] **9. Failure demo** — kill a job mid-run and delete a node; record what the alerts and dashboard show and that no result was lost (`docs/failure-demo.md`).
+- [ ] **4. Safe results** — the job writes `result.json` to a persistent volume that outlives the pod.
+- [ ] **5. Monitoring** — kube-prometheus-stack installed with Helm; Grafana shows job and node status.
+- [ ] **6. Alert** — `monitoring/alerts.yaml` fires when a benchmark job fails.
+- [ ] **7. CI/CD** — `.github/workflows/ci.yml` builds the image and runs a test Job in kind on every push.
+- [ ] **8. Failure demo** — kill a job and show the alert, the dashboard, and that saved results survive (`docs/failure-demo.md`).
 
-Stretch: add OpenTelemetry traces to the job.
+## Next steps
+
+Not built yet:
+
+- Terraform to create the cluster and install everything (`terraform/` holds the plan).
+- MinIO object storage instead of a volume (`helm/minio-values.yaml`).
+- Alerts for idle nodes and for jobs that hang.
+- OpenTelemetry traces in the job.
 
 ## Prerequisites (macOS)
 
 ```sh
-brew install kind helm terraform
-# Docker Desktop must be running; kubectl is already installed
+brew install kind helm hashicorp/tap/terraform
+# Docker Desktop must be running; kubectl must be installed
 ```
 
 ## Run
 
 ```sh
-./scripts/up.sh      # create cluster + install everything
+./scripts/up.sh      # create the cluster
 ./scripts/run-job.sh # run one benchmark job
 ./scripts/down.sh    # delete everything
 ```
 
 ## Demo
 
-_TODO after milestone 9: Grafana screenshot, alert screenshot, and a short write-up of the failure test._
+_TODO after milestone 8: Grafana screenshot, alert screenshot, and a short write-up of the failure test._
 
 ## What I learned
 
-_TODO: fill in as you go — one line per milestone._
+_TODO: one line per milestone._
