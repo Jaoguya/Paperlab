@@ -24,9 +24,17 @@ spec:
               value: "manual"
             - name: BENCH_SIZE
               value: "5000000"
-            # TODO (milestone 4): RESULTS_DIR pointing at a mounted persistent volume.
+            - name: RESULTS_DIR
+              value: "/results"
+          volumeMounts:
+            - name: results
+              mountPath: /results
           resources:
             # TODO: set requests/limits and explain what happens if you exceed them.
             requests:
               cpu: "100m"
               memory: "64Mi"
+      volumes:
+        - name: results
+          persistentVolumeClaim:
+            claimName: results   # k8s/results-pvc.yaml

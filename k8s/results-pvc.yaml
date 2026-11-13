@@ -1,0 +1,16 @@
+# Milestone 4: storage that outlives every benchmark pod.
+# The Job mounts this claim at /results; deleting the Job or pod keeps the files.
+# Only deleting this claim (or the whole cluster) removes them.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: results
+  labels:
+    app: paperlab
+spec:
+  accessModes:
+    - ReadWriteOnce        # one node mounts it at a time
+  storageClassName: standard   # kind's built-in local-path storage
+  resources:
+    requests:
+      storage: 1Gi
