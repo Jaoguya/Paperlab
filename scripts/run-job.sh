@@ -1,17 +1,31 @@
 #!/usr/bin/env bash
-# Milestone 3: build the image, load it into kind, run the Job, show its logs.
+# Run one benchmark Job and report whether it succeeded.
+#   ./scripts/run-job.sh                     normal run
+#   BENCH_SIZE=oops ./scripts/run-job.sh     a run that fails (bad input)
+# Exit code: 0 if the Job completed, 1 if it failed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-docker build -t paperlab-job:dev job/
-kind load docker-image paperlab-job:dev --name paperlab
+export RUN_ID="${RUN_ID:-manual}"
+export BENCH_SIZE="${BENCH_SIZE:-5000000}"
+CLUSTER="${CLUSTER:-paperlab}"
+
+docker build -q -t paperlab-job:dev job/
+kind load docker-image paperlab-job:dev --name "$CLUSTER"
 
 kubectl apply -f k8s/results-pvc.yaml
-kubectl delete job benchmark --ignore-not-found
-kubectl apply -f k8s/benchmark-job.yaml
-kubectl wait --for=condition=complete job/benchmark --timeout=300s
-kubectl logs job/benchmark
+kubectl delete job benchmark --ignore-not-found --wait
+envsubst '$RUN_ID $BENCH_SIZE' < k8s/benchmark-job.yaml | kubectl apply -f -
 
+# Wait until the Job either completes or fails (kubectl wait can only watch one).
+status=""
+for _ in $(seq 1 150); do
+  status=$(kubectl get job benchmark -o jsonpath='{range .status.conditions[?(@.status=="True")]}{.type} {end}')
+  case "$status" in *Complete*|*Failed*) break ;; esac
+  sleep 2
+done
+echo "job status: ${status:-unknown}"
+kubectl logs job/benchmark --all-containers || true
 
 # Milestone 4: list every saved result on the volume, using a throwaway pod.
 kubectl delete pod results-reader --ignore-not-found
@@ -21,3 +35,5 @@ kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/results-reader --tim
 echo "--- saved results ---"
 kubectl logs results-reader
 kubectl delete pod results-reader
+
+[[ "$status" == *Complete* ]]

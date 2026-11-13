@@ -1,29 +1,26 @@
-# Milestone 6: alert rules. kube-state-metrics exposes kube_job_* metrics.
+# Milestone 6: alert when a benchmark Job fails.
+# kube-state-metrics exports kube_job_status_failed: the number of failed pods of a Job.
+# A hung job also ends here: activeDeadlineSeconds in k8s/benchmark-job.yaml stops it
+# and marks it failed.
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: paperlab-alerts
+  namespace: monitoring
   labels:
-    release: monitoring   # TODO: must match the Helm release name you install
+    release: monitoring
 spec:
   groups:
     - name: paperlab
       rules:
-        - alert: BenchmarkJobStuck
-          # TODO: write a PromQL expression that is true when a paperlab Job
-          # has been active longer than you expect (hint: kube_job_status_active,
-          # kube_job_status_start_time).
-          expr: vector(0) > 1
-          for: 5m
+        - alert: BenchmarkJobFailed
+          expr: |
+            sum by (namespace, job_name) (
+              kube_job_status_failed{job_name=~"benchmark.*"}
+            ) > 0
+          for: 0m
           labels:
-            severity: warning
+            severity: critical
           annotations:
-            summary: "Benchmark job running longer than expected"
-        - alert: NodeIdle
-          # TODO: true when a node's CPU use stays near zero while no job runs.
-          expr: vector(0) > 1
-          for: 30m
-          labels:
-            severity: info
-          annotations:
-            summary: "Node idle — nothing running"
+            summary: "Benchmark job {{ $labels.job_name }} failed"
+            description: "Check it with: kubectl logs job/{{ $labels.job_name }}"

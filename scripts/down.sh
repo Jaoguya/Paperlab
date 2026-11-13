@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-# Delete everything. Milestone 8: switch to `terraform -chdir=terraform destroy`.
+# Delete everything, including saved results on the volume.
 set -euo pipefail
 kind delete cluster --name paperlab

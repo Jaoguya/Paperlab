@@ -1,4 +1,4 @@
-# Milestone 7: CI/CD — on every push, build the job image and prove a job runs.
+# Milestone 7: on every push, build the image and prove a Job runs (and fails) in Kubernetes.
 name: CI
 
 on:
@@ -13,12 +13,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run the benchmark directly
-        run: python job/run_benchmark.py
+        run: RESULTS_DIR=$(mktemp -d) python job/run_benchmark.py
 
-      - name: Build the job image
-        run: docker build -t paperlab-job:dev job/
+      - name: Create a kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: paperlab
+          config: cluster/kind-config.yaml
 
-      # TODO: create a kind cluster in CI (look up helm/kind-action),
-      #       load the image, run k8s/benchmark-job.yaml, wait for completion.
-      # TODO (milestone 4): install MinIO in CI and assert result.json was uploaded.
-      # TODO (CD): on main, push the image to GitHub Container Registry (ghcr.io).
+      - name: Run a benchmark Job (must succeed)
+        run: ./scripts/run-job.sh
+
+      - name: Run a broken Job (must fail)
+        run: |
+          if BENCH_SIZE=oops ./scripts/run-job.sh; then
+            echo "A job with bad input succeeded; failure detection is broken" >&2
+            exit 1
+          fi
+          echo "Broken job failed as expected"

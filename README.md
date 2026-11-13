@@ -58,14 +58,25 @@ brew install kind helm hashicorp/tap/terraform
 ## Run
 
 ```sh
-./scripts/up.sh      # create the cluster
-./scripts/run-job.sh # run one benchmark job
-./scripts/down.sh    # delete everything
+./scripts/up.sh                       # create the cluster, install Prometheus, Grafana and the alert (~5 min first time)
+./scripts/run-job.sh                  # run one benchmark job; lists saved results
+BENCH_SIZE=oops ./scripts/run-job.sh  # a job that fails on purpose, to see the alert
+./scripts/down.sh                     # delete everything, including saved results
+```
+
+See the dashboard and alerts:
+
+```sh
+kubectl -n monitoring port-forward svc/monitoring-grafana 3000:80                 # Grafana: http://localhost:3000, dashboard "PaperLab"
+kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090  # alerts: http://localhost:9090/alerts
+kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d; echo  # Grafana password (user: admin)
 ```
 
 ## Demo
 
-_TODO after milestone 8: Grafana screenshot, alert screenshot, and a short write-up of the failure test._
+Failure tests and what happened: [`docs/failure-demo.md`](docs/failure-demo.md).
+
+_TODO: add a Grafana screenshot and an alert screenshot._
 
 ## What I learned
 

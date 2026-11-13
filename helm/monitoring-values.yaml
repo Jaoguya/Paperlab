@@ -1,6 +1,29 @@
 # Milestone 5: values for kube-prometheus-stack (Prometheus + Grafana + kube-state-metrics).
-# Chart: prometheus-community/kube-prometheus-stack
+# Installed by scripts/up.sh as Helm release "monitoring" in namespace "monitoring".
 grafana:
-  adminPassword: change-me   # TODO: move to a Secret before pushing to GitHub
-# TODO: keep retention short for a laptop, e.g. prometheus.prometheusSpec.retention
-# TODO: make Prometheus pick up monitoring/alerts.yaml (ruleSelector / labels)
+  admin:
+    existingSecret: grafana-admin   # created by scripts/up.sh with a random password
+    userKey: admin-user
+    passwordKey: admin-password
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard     # loads monitoring/dashboard.yaml
+
+prometheus:
+  prometheusSpec:
+    retention: 1d                 # a laptop does not need weeks of history
+    scrapeInterval: 15s
+    # Pick up every PrometheusRule (monitoring/alerts.yaml), not only the chart's own.
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+# kind does not expose these control-plane parts, so scraping them only raises false alerts.
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false

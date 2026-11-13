@@ -1,0 +1,229 @@
+# Milestone 5: PaperLab Grafana dashboard. Grafana's sidecar loads any ConfigMap
+# labelled grafana_dashboard in the monitoring namespace.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paperlab-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  paperlab.json: |
+    {
+      "title": "PaperLab",
+      "uid": "paperlab",
+      "schemaVersion": 39,
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "refresh": "10s",
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Benchmark job running",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "blue"
+              },
+              "unit": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kube_job_status_active{job_name=~\"benchmark.*\"}) or vector(0)"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Benchmark job succeeded",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 0,
+            "w": 6,
+            "h": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "green"
+              },
+              "unit": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kube_job_status_succeeded{job_name=~\"benchmark.*\"}) or vector(0)"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Benchmark job failed",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 6,
+            "h": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "red"
+              },
+              "unit": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum(kube_job_status_failed{job_name=~\"benchmark.*\"}) or vector(0)"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Alerts firing",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 0,
+            "w": 6,
+            "h": 5
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "orange"
+              },
+              "unit": "none"
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "count(ALERTS{alertname=\"BenchmarkJobFailed\",alertstate=\"firing\"}) or vector(0)"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Benchmark job status over time",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (job_name) (kube_job_status_active{job_name=~\"benchmark.*\"})",
+              "legendFormat": "running"
+            },
+            {
+              "refId": "B",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (job_name) (kube_job_status_succeeded{job_name=~\"benchmark.*\"})",
+              "legendFormat": "succeeded"
+            },
+            {
+              "refId": "C",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (job_name) (kube_job_status_failed{job_name=~\"benchmark.*\"})",
+              "legendFormat": "failed"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Node CPU in use (cores)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "sum by (instance) (rate(node_cpu_seconds_total{mode!=\"idle\"}[2m]))",
+              "legendFormat": "{{instance}}"
+            }
+          ]
+        }
+      ]
+    }
