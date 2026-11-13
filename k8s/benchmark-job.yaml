@@ -1,0 +1,33 @@
+# Milestone 3: run the benchmark image as a Kubernetes Job.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: benchmark
+  labels:
+    app: paperlab
+spec:
+  # TODO: decide backoffLimit — how many retries before the Job counts as failed?
+  backoffLimit: 1
+  # TODO: activeDeadlineSeconds stops a stuck job; pick a value and explain why.
+  template:
+    metadata:
+      labels:
+        app: paperlab
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: benchmark
+          image: paperlab-job:dev   # loaded into kind by scripts/run-job.sh
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RUN_ID
+              value: "manual"
+            - name: BENCH_SIZE
+              value: "5000000"
+            # TODO (milestone 4): RESULTS_BUCKET and MinIO endpoint/credentials
+            # from a Secret, not hard-coded here.
+          resources:
+            # TODO: set requests/limits and explain what happens if you exceed them.
+            requests:
+              cpu: "100m"
+              memory: "64Mi"

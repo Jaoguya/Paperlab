@@ -1,0 +1,7 @@
+result.json
+__pycache__/
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+.DS_Store

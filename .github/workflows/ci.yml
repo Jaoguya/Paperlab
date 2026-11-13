@@ -1,0 +1,24 @@
+# Milestone 7: CI/CD — on every push, build the job image and prove a job runs.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the benchmark directly
+        run: python job/run_benchmark.py
+
+      - name: Build the job image
+        run: docker build -t paperlab-job:dev job/
+
+      # TODO: create a kind cluster in CI (look up helm/kind-action),
+      #       load the image, run k8s/benchmark-job.yaml, wait for completion.
+      # TODO (milestone 4): install MinIO in CI and assert result.json was uploaded.
+      # TODO (CD): on main, push the image to GitHub Container Registry (ghcr.io).

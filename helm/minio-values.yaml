@@ -1,0 +1,11 @@
+# Milestone 4: values for the MinIO Helm chart (object storage for results).
+# Chart: https://charts.min.io/  (helm repo add minio https://charts.min.io/)
+mode: standalone
+replicas: 1
+persistence:
+  size: 1Gi
+resources:
+  requests:
+    memory: 256Mi
+# TODO: create a bucket for results (look up the chart's `buckets` value).
+# TODO: credentials — use a Kubernetes Secret, never commit real passwords.

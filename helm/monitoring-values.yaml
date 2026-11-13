@@ -1,0 +1,6 @@
+# Milestone 5: values for kube-prometheus-stack (Prometheus + Grafana + kube-state-metrics).
+# Chart: prometheus-community/kube-prometheus-stack
+grafana:
+  adminPassword: change-me   # TODO: move to a Secret before pushing to GitHub
+# TODO: keep retention short for a laptop, e.g. prometheus.prometheusSpec.retention
+# TODO: make Prometheus pick up monitoring/alerts.yaml (ruleSelector / labels)
